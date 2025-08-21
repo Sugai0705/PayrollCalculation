@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import '../login/login_page.dart';
 import '../home/home_page.dart';
 import '../members/members_page.dart';
-import '../sales/sales_page.dart';
+import '../payroll/payroll_detail_page.dart';
 import '../payroll/payroll_page.dart';
+import '../sales/sales_page.dart';
 import '../logic/logic_page.dart';
+import '../members/members_detail_page.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/login',
@@ -24,9 +26,11 @@ final GoRouter router = GoRouter(
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
               BottomNavigationBarItem(icon: Icon(Icons.people), label: 'メンバー'),
-              BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: '売上'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.attach_money), label: '売上'),
               BottomNavigationBarItem(icon: Icon(Icons.list), label: '給料'),
-              BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'ロジック'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.settings), label: 'ロジック'),
             ],
           ),
         );
@@ -45,6 +49,15 @@ final GoRouter router = GoRouter(
             GoRoute(
               path: '/members',
               builder: (context, state) => MembersPage(),
+              routes: [
+                GoRoute(
+                  path: 'detail/:id',
+                  builder: (context, state) {
+                    final memberId = state.pathParameters['id'];
+                    return MembersDetailPage(memberId: memberId!);
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -61,6 +74,15 @@ final GoRouter router = GoRouter(
             GoRoute(
               path: '/payroll',
               builder: (context, state) => PayrollPage(),
+              routes: [
+                GoRoute(
+                  path: 'detail/:id',
+                  builder: (context, state) {
+                    final memberId = state.pathParameters['id']!;
+                    return PayrollDetailPage(memberId: memberId);
+                  },
+                ),
+              ],
             ),
           ],
         ),

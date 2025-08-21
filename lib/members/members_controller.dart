@@ -28,7 +28,9 @@ class MembersController extends ChangeNotifier {
 
   Future<void> addMember(String name, int hourlyWage) async {
     try {
-      await supabase.from('members').insert({'name': name, 'hourly_wage': hourlyWage});
+      await supabase
+          .from('members')
+          .insert({'name': name, 'hourly_wage': hourlyWage});
       await fetchMembers();
     } catch (e) {
       errorMessage = e.toString();
@@ -38,7 +40,9 @@ class MembersController extends ChangeNotifier {
 
   Future<void> updateMember(int id, String name, int hourlyWage) async {
     try {
-      await supabase.from('members').update({'name': name, 'hourly_wage': hourlyWage}).eq('id', id);
+      await supabase
+          .from('members')
+          .update({'name': name, 'hourly_wage': hourlyWage}).eq('id', id);
       await fetchMembers();
     } catch (e) {
       errorMessage = e.toString();

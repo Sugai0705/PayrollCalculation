@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'members_controller.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 class MembersPage extends StatelessWidget {
   @override
@@ -32,6 +32,9 @@ class MembersPage extends StatelessWidget {
                             return ListTile(
                               title: Text(member['name'] ?? ''),
                               subtitle: Text('時給: ${member['hourly_wage'] ?? ''}円'),
+                              onTap: () {
+                                context.go('/members/detail/${member['id']}');
+                              },
                             );
                           },
                         ),

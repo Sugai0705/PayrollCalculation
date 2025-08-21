@@ -2,37 +2,184 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'sales_controller.dart';
 
-class SalesPage extends StatelessWidget {
+class SalesPage extends StatefulWidget {
+  @override
+  State<SalesPage> createState() => _SalesPageState();
+}
+
+class _SalesPageState extends State<SalesPage> {
+  final dateController = TextEditingController();
+  DateTime? selectedDate;
+  Map<String, int> bottleQuantities = {};
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => SalesController(),
       child: Consumer<SalesController>(
         builder: (context, controller, _) {
-          final salesController = TextEditingController();
+          // 商品リストが変わったら初期化
+          for (var bottle in controller.bottles) {
+            bottleQuantities.putIfAbsent(bottle['id'].toString(), () => 0);
+          }
           return Scaffold(
-            appBar: AppBar(title: Text('売上入力')),
+            appBar: AppBar(title: Text('売上登録')),
             body: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  TextField(
-                    controller: salesController,
-                    decoration: InputDecoration(labelText: '売上金額を入力'),
-                    keyboardType: TextInputType.number,
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: controller.selectedMemberId,
+                    items: controller.members.map((member) {
+                      return DropdownMenuItem<String>(
+                        value: member['id'].toString(),
+                        child: Text(member['name'] ?? ''),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      controller.selectedMemberId = value;
+                      controller.notifyListeners();
+                    },
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          selectedDate == null
+                              ? '日付を選択してください'
+                              : '日付: ${selectedDate!.toLocal().toString().split(' ')[0]}',
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedDate = picked;
+                            });
+                          }
+                        },
+                        child: Text('日付選択'),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 16),
+                  Text('商品ごとの個数',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: controller.bottles.length,
+                      itemBuilder: (context, index) {
+                        final bottle = controller.bottles[index];
+                        final bottleId = bottle['id'].toString();
+                        return Row(
+                          children: [
+                            Expanded(
+                                child: Text(
+                                    '${bottle['name']}（¥${bottle['price']}）')),
+                            IconButton(
+                              icon: Icon(Icons.remove),
+                              onPressed: () {
+                                setState(() {
+                                  bottleQuantities[bottleId] =
+                                      (bottleQuantities[bottleId] ?? 0) > 0
+                                          ? (bottleQuantities[bottleId]! - 1)
+                                          : 0;
+                                });
+                              },
+                            ),
+                            Text('${bottleQuantities[bottleId] ?? 0}'),
+                            IconButton(
+                              icon: Icon(Icons.add),
+                              onPressed: () {
+                                setState(() {
+                                  bottleQuantities[bottleId] =
+                                      (bottleQuantities[bottleId] ?? 0) + 1;
+                                });
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
                   ElevatedButton(
-                    onPressed: () {
-                      controller.submitSales(salesController.text);
-                      salesController.clear();
-                    },
+                    onPressed: controller.isLoading ||
+                            controller.selectedMemberId == null
+                        ? null
+                        : () async {
+                            final filtered = Map.fromEntries(
+                              bottleQuantities.entries
+                                  .where((e) => e.value > 0),
+                            );
+                            if (selectedDate == null) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('エラー'),
+                                  content: Text('日付を選択してください。'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return;
+                            }
+                            if (filtered.isEmpty) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('エラー'),
+                                  content: Text('商品を1つ以上選択してください。'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              return;
+                            }
+                            await controller.addSale(
+                              memberId: controller.selectedMemberId!,
+                              date: selectedDate!,
+                              bottleQuantities: filtered,
+                            );
+                            setState(() {
+                              bottleQuantities.updateAll((key, value) => 0);
+                              selectedDate = null;
+                            });
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text('登録完了'),
+                                content: Text('売上登録が完了しました。'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                     child: Text('登録'),
                   ),
-                  if (controller.lastInput != null)
+                  if (controller.errorMessage != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Text('直近の入力: ${controller.lastInput}'),
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(controller.errorMessage!,
+                          style: TextStyle(color: Colors.red)),
                     ),
                 ],
               ),
