@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'login/login_page.dart';
-import 'home/home_page.dart';
-import 'members/members_page.dart';
-import 'sales/sales_page.dart';
-import 'payroll/payroll_page.dart';
-import 'logic/logic_page.dart';
+import '../login/login_page.dart';
+import '../home/home_page.dart';
+import '../members/members_page.dart';
+import '../sales/sales_page.dart';
+import '../payroll/payroll_page.dart';
+import '../logic/logic_page.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/login',

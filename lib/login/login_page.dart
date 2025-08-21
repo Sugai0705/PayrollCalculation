@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_controller.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatelessWidget {
   @override
@@ -43,7 +44,7 @@ class LoginPage extends StatelessWidget {
                                   await controller.login();
                                   if (controller.errorMessage == null) {
                                     // ログイン成功時の画面遷移
-                                    Navigator.pushReplacementNamed(context, '/home');
+                                    GoRouter.of(context).go('/home');
                                   }
                                 },
                           child: Text('ログイン'),
@@ -58,7 +59,7 @@ class LoginPage extends StatelessWidget {
                                   await controller.signUp();
                                   if (controller.errorMessage == null) {
                                     // 新規登録成功時の画面遷移
-                                    Navigator.pushReplacementNamed(context, '/home');
+                                    GoRouter.of(context).go('/home');
                                   }
                                 },
                           child: Text('新規登録'),
