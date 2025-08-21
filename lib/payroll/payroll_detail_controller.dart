@@ -5,7 +5,9 @@ class PayrollDetailController extends ChangeNotifier {
   final String memberId;
   Map<String, dynamic>? member;
   List<Map<String, dynamic>> sales = [];
+  List<Map<String, dynamic>> salesItems = [];
   Map<String, dynamic> bottles = {};
+  List<Map<String, dynamic>> workTimes = [];
   bool isLoading = true;
 
   PayrollDetailController(this.memberId) {
@@ -21,18 +23,50 @@ class PayrollDetailController extends ChangeNotifier {
     );
     final bottlesData = await supabase.from('bottles').select();
     bottles = {for (var b in bottlesData) b['id']: b};
+
+    // sales_items取得
+    final salesIds = sales.map((s) => s['id']).toList();
+    salesItems = List<Map<String, dynamic>>.from(
+      await supabase
+          .from('sales_items')
+          .select()
+          .filter('sales_id', 'in', salesIds),
+    );
+
+// 今月の勤務時間取得
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    workTimes = List<Map<String, dynamic>>.from(
+      await supabase
+          .from('work_times')
+          .select()
+          .eq('member_id', memberId)
+          .gte('date', firstDay.toIso8601String())
+          .lte('date', lastDay.toIso8601String()),
+    );
+
     isLoading = false;
     notifyListeners();
   }
 
-  int get baseSalary => (member?['hourly_wage'] ?? 0) * 160;
+  double get totalWorkHours {
+    return workTimes.fold<double>(0, (sum, wt) => sum + (wt['hours'] ?? 0));
+  }
+
+  int get baseSalary {
+    final hourlyWage = member?['hourly_wage'] ?? 0;
+    return (hourlyWage * totalWorkHours).round();
+  }
 
   double get incentiveTotal {
     double total = 0;
-    for (var sale in sales) {
-      final bottle = bottles[sale['bottle_id']];
+    for (var item in salesItems) {
+      final bottle = bottles[item['bottle_id']];
       final rate = bottle?['incentive_rate'] ?? 0.0;
-      total += (sale['amount'] ?? 0) * rate;
+      final price = bottle?['price'] ?? 0;
+      final quantity = item['quantity'] ?? 0;
+      total += price * quantity * rate;
     }
     return total;
   }
@@ -41,13 +75,14 @@ class PayrollDetailController extends ChangeNotifier {
 
   List<String> get calculationDetails {
     List<String> details = [];
-    for (var sale in sales) {
-      final bottle = bottles[sale['bottle_id']];
+    for (var item in salesItems) {
+      final bottle = bottles[item['bottle_id']];
       final rate = (bottle?['incentive_rate'] ?? 0.0) as num;
-      final amount = (sale['amount'] ?? 0) as num;
+      final price = (bottle?['price'] ?? 0) as num;
+      final quantity = (item['quantity'] ?? 0) as num;
       final bottleName = bottle?['name'] ?? '';
       details.add(
-          '売上${amount}円 × ${bottleName}インセンティブ${(rate * 100).toStringAsFixed(1)}% = ${(amount * rate).toStringAsFixed(0)}円');
+          '$bottleName: ¥$price × $quantity × インセンティブ${(rate * 100).toStringAsFixed(1)}% = ${(price * quantity * rate).toStringAsFixed(0)}円');
     }
     return details;
   }

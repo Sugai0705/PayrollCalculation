@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:payroll_calculation/shared/global_navigation.dart';
 import '../login/login_page.dart';
 import '../home/home_page.dart';
 import '../members/members_page.dart';
@@ -20,18 +21,11 @@ final GoRouter router = GoRouter(
       builder: (context, state, navigationShell) {
         return Scaffold(
           body: navigationShell,
-          bottomNavigationBar: BottomNavigationBar(
+          bottomNavigationBar: GlobalNavigationBar(
             currentIndex: navigationShell.currentIndex,
-            onTap: navigationShell.goBranch,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
-              BottomNavigationBarItem(icon: Icon(Icons.people), label: 'メンバー'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.attach_money), label: '売上'),
-              BottomNavigationBarItem(icon: Icon(Icons.list), label: '給料'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.settings), label: 'ロジック'),
-            ],
+            onTap: (index) {
+              navigationShell.goBranch(index, initialLocation: true);
+            },
           ),
         );
       },

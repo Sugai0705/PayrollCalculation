@@ -9,6 +9,7 @@ class MembersDetailController extends ChangeNotifier {
   Map<String, dynamic> bottles = {}; // bottle_id: bottleデータ
   bool isLoading = true;
   String? errorMessage;
+  List<Map<String, dynamic>> workTimes = [];
 
   MembersDetailController(this.memberId) {
     fetchDetail();
@@ -35,11 +36,19 @@ class MembersDetailController extends ChangeNotifier {
       // bottles
       final bottlesData = await supabase.from('bottles').select();
       bottles = {for (var b in bottlesData) b['id']: b};
+      // worktime
+      workTimes = List<Map<String, dynamic>>.from(
+        await supabase.from('work_times').select().eq('member_id', memberId),
+      );
       errorMessage = null;
     } catch (e) {
       errorMessage = e.toString();
     }
     isLoading = false;
     notifyListeners();
+  }
+
+  double getTotalWorkHours() {
+    return workTimes.fold<double>(0, (sum, wt) => sum + (wt['hours'] ?? 0));
   }
 }

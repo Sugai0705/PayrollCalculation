@@ -29,6 +29,9 @@ class PayrollDetailPage extends StatelessWidget {
                       style: TextStyle(fontSize: 20)),
                   Text('時給: ${controller.member?['hourly_wage'] ?? ''}円',
                       style: TextStyle(fontSize: 18)),
+                  Text(
+                      '勤務時間合計: ${controller.totalWorkHours.toStringAsFixed(1)}時間',
+                      style: TextStyle(fontSize: 18)),
                   Text('基本給: ${controller.baseSalary}円',
                       style: TextStyle(fontSize: 18)),
                   Text(
