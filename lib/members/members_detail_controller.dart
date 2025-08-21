@@ -42,10 +42,4 @@ class MembersDetailController extends ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
-
-  int getMonthlySalary() {
-    if (member == null) return 0;
-    final hourlyWage = member!['hourly_wage'] ?? 0;
-    return hourlyWage * 160;
-  }
 }

@@ -38,8 +38,6 @@ class MembersDetailPage extends StatelessWidget {
                             style: TextStyle(fontSize: 20)),
                         Text('時給: ${member['hourly_wage'] ?? ''}円',
                             style: TextStyle(fontSize: 18)),
-                        Text('今月の月給（例）: ${controller.getMonthlySalary()}円',
-                            style: TextStyle(fontSize: 18)),
                         SizedBox(height: 16),
                         Text('売上履歴:', style: TextStyle(fontSize: 18)),
                         Expanded(
