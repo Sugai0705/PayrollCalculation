@@ -28,61 +28,94 @@ class _SalesPageState extends State<SalesPage> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    value: controller.selectedMemberId,
-                    items: controller.members.map((member) {
-                      return DropdownMenuItem<String>(
-                        value: member['id'].toString(),
-                        child: Text(member['name'] ?? ''),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      controller.selectedMemberId = value;
-                      controller.notifyListeners();
-                    },
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          selectedDate == null
-                              ? '日付を選択してください'
-                              : '日付: ${selectedDate!.toLocal().toString().split(' ')[0]}',
-                        ),
+                  // メンバー・日付選択をカードでまとめる
+                  Card(
+                    elevation: 2,
+                    color: Colors.blue[50],
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Text('メンバー',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: DropdownButton<int?>(
+                                  value: controller.selectedMemberId,
+                                  isExpanded: true,
+                                  items: controller.members
+                                      .map((m) => DropdownMenuItem<int>(
+                                            value: m['id'] as int,
+                                            child: Text(m['name'] ?? ''),
+                                          ))
+                                      .toList(),
+                                  onChanged: (value) {
+                                    controller.selectedMemberId = value;
+                                    controller.notifyListeners();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Text('日付',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  selectedDate == null
+                                      ? '未選択'
+                                      : '${selectedDate!.toLocal().toString().split(' ')[0]}',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate ?? DateTime.now(),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      selectedDate = picked;
+                                    });
+                                  }
+                                },
+                                child: Text('選択'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate ?? DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              selectedDate = picked;
-                            });
-                          }
-                        },
-                        child: Text('日付選択'),
-                      ),
-                    ],
+                    ),
                   ),
                   SizedBox(height: 16),
                   Text('商品ごとの個数',
                       style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
                   Expanded(
-                    child: ListView.builder(
+                    child: ListView.separated(
                       itemCount: controller.bottles.length,
+                      separatorBuilder: (_, __) => Divider(),
                       itemBuilder: (context, index) {
                         final bottle = controller.bottles[index];
                         final bottleId = bottle['id'].toString();
                         return Row(
                           children: [
                             Expanded(
-                                child: Text(
-                                    '${bottle['name']}（¥${bottle['price']}）')),
+                              child: Text(
+                                  '${bottle['name']}（¥${bottle['price']}）'),
+                            ),
                             IconButton(
                               icon: Icon(Icons.remove),
                               onPressed: () {
@@ -109,71 +142,75 @@ class _SalesPageState extends State<SalesPage> {
                       },
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: controller.isLoading ||
-                            controller.selectedMemberId == null
-                        ? null
-                        : () async {
-                            final filtered = Map.fromEntries(
-                              bottleQuantities.entries
-                                  .where((e) => e.value > 0),
-                            );
-                            if (selectedDate == null) {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('エラー'),
-                                  content: Text('日付を選択してください。'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('OK'),
-                                    ),
-                                  ],
-                                ),
+                  SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: controller.isLoading ||
+                              controller.selectedMemberId == null
+                          ? null
+                          : () async {
+                              final filtered = Map.fromEntries(
+                                bottleQuantities.entries
+                                    .where((e) => e.value > 0),
                               );
-                              return;
-                            }
-                            if (filtered.isEmpty) {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('エラー'),
-                                  content: Text('商品を1つ以上選択してください。'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('OK'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              return;
-                            }
-                            await controller.addSale(
-                              memberId: controller.selectedMemberId!,
-                              date: selectedDate!,
-                              bottleQuantities: filtered,
-                            );
-                            setState(() {
-                              bottleQuantities.updateAll((key, value) => 0);
-                              selectedDate = null;
-                            });
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: Text('登録完了'),
-                                content: Text('売上登録が完了しました。'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text('OK'),
+                              if (selectedDate == null) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('エラー'),
+                                    content: Text('日付を選択してください。'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('OK'),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                    child: Text('登録'),
+                                );
+                                return;
+                              }
+                              if (filtered.isEmpty) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('エラー'),
+                                    content: Text('商品を1つ以上選択してください。'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('OK'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                return;
+                              }
+                              await controller.addSale(
+                                memberId: controller.selectedMemberId!,
+                                date: selectedDate!,
+                                bottleQuantities: filtered,
+                              );
+                              setState(() {
+                                bottleQuantities.updateAll((key, value) => 0);
+                                selectedDate = null;
+                              });
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('登録完了'),
+                                  content: Text('売上登録が完了しました。'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                      child: Text('登録'),
+                    ),
                   ),
                   if (controller.errorMessage != null)
                     Padding(

@@ -3,18 +3,65 @@ import 'package:provider/provider.dart';
 import 'members_controller.dart';
 import 'package:go_router/go_router.dart';
 
-class MembersPage extends StatelessWidget {
+class MembersPage extends StatefulWidget {
+  @override
+  State<MembersPage> createState() => _MembersPageState();
+}
+
+class _MembersPageState extends State<MembersPage> {
+  bool showSearch = false;
+  final searchController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
-    final nameController = TextEditingController();
-    final wageController = TextEditingController();
-
     return ChangeNotifierProvider(
       create: (_) => MembersController(),
       child: Consumer<MembersController>(
         builder: (context, controller, _) {
           return Scaffold(
-            appBar: AppBar(title: Text('メンバー一覧')),
+            appBar: AppBar(
+              title: Text('メンバー一覧'),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: () {
+                    setState(() {
+                      showSearch = !showSearch;
+                      if (!showSearch) {
+                        searchController.clear();
+                        controller.searchMembers('');
+                      }
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.sort),
+                  onPressed: () {
+                    setState(() {
+                      controller.sortByPosition();
+                    });
+                  },
+                ),
+              ],
+              bottom: showSearch
+                  ? PreferredSize(
+                      preferredSize: Size.fromHeight(56.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          controller: searchController,
+                          onChanged: (value) {
+                            controller.searchMembers(value);
+                          },
+                          decoration: InputDecoration(
+                            hintText: '名前で検索',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
             body: controller.isLoading
                 ? Center(child: CircularProgressIndicator())
                 : Column(
@@ -22,55 +69,40 @@ class MembersPage extends StatelessWidget {
                       if (controller.errorMessage != null)
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(controller.errorMessage!, style: TextStyle(color: Colors.red)),
+                          child: Text(controller.errorMessage!,
+                              style: TextStyle(color: Colors.red)),
                         ),
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: controller.members.length,
-                          itemBuilder: (context, index) {
-                            final member = controller.members[index];
-                            return ListTile(
-                              title: Text(member['name'] ?? ''),
-                              subtitle: Text('時給: ${member['hourly_wage'] ?? ''}円'),
-                              onTap: () {
-                                context.go('/members/detail/${member['id']}');
-                              },
-                            );
+                        child: RefreshIndicator(
+                          onRefresh: () async {
+                            await controller.fetchMembers();
                           },
+                          child: ListView.builder(
+                            itemCount: controller.members.length,
+                            itemBuilder: (context, index) {
+                              final member = controller.members[index];
+                              return ListTile(
+                                title: Text(member['name'] ?? ''),
+                                subtitle: Text(
+                                    '役職: ${MembersController.getPositionLabel(member['position'])}'),
+                                onTap: () {
+                                  context.go('/members/detail/${member['id']}');
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: nameController,
-                                decoration: InputDecoration(labelText: '名前'),
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: wageController,
-                                decoration: InputDecoration(labelText: '時給'),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () async {
-                                final name = nameController.text;
-                                final wage = int.tryParse(wageController.text) ?? 0;
-                                if (name.isNotEmpty && wage > 0) {
-                                  await controller.addMember(name, wage);
-                                  nameController.clear();
-                                  wageController.clear();
-                                }
-                              },
-                              child: Text('追加'),
-                            ),
-                          ],
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              context.go('/members/add');
+                            },
+                            child: Text('メンバー追加'),
+                          ),
                         ),
                       ),
                     ],

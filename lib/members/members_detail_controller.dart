@@ -49,6 +49,18 @@ class MembersDetailController extends ChangeNotifier {
   }
 
   double getTotalWorkHours() {
-    return workTimes.fold<double>(0, (sum, wt) => sum + (wt['hours'] ?? 0));
+    return workTimes.fold<double>(
+      0,
+      (sum, wt) {
+        final hours = wt['hours'];
+        if (hours == null) return sum;
+        if (hours is num) return sum + hours.toDouble();
+        if (hours is String && hours.isNotEmpty) {
+          final parsed = double.tryParse(hours);
+          return parsed != null ? sum + parsed : sum;
+        }
+        return sum;
+      },
+    );
   }
 }

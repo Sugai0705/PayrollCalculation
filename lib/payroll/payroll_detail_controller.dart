@@ -51,7 +51,10 @@ class PayrollDetailController extends ChangeNotifier {
   }
 
   double get totalWorkHours {
-    return workTimes.fold<double>(0, (sum, wt) => sum + (wt['hours'] ?? 0));
+    return workTimes.fold<double>(
+      0,
+      (sum, wt) => sum + double.parse(wt['hours'].toString()),
+    );
   }
 
   int get baseSalary {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:payroll_calculation/members/members_add_page.dart';
 import 'package:payroll_calculation/shared/global_navigation.dart';
 import '../login/login_page.dart';
 import '../home/home_page.dart';
@@ -50,6 +51,10 @@ final GoRouter router = GoRouter(
                     final memberId = state.pathParameters['id'];
                     return MembersDetailPage(memberId: memberId!);
                   },
+                ),
+                GoRoute(
+                  path: 'add',
+                  builder: (context, state) => MembersAddPage(),
                 ),
               ],
             ),

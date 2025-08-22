@@ -7,7 +7,7 @@ class SalesController extends ChangeNotifier {
   String? errorMessage;
 
   List<Map<String, dynamic>> members = [];
-  String? selectedMemberId;
+  int? selectedMemberId;
 
   List<Map<String, dynamic>> bottles = [];
   String? selectedBottleId;
@@ -22,7 +22,7 @@ class SalesController extends ChangeNotifier {
       final data = await supabase.from('members').select();
       members = List<Map<String, dynamic>>.from(data);
       if (members.isNotEmpty) {
-        selectedMemberId = members.first['id'].toString();
+        selectedMemberId = members.first['id']; // int型でOK
       }
       notifyListeners();
     } catch (e) {
@@ -46,7 +46,7 @@ class SalesController extends ChangeNotifier {
   }
 
   Future<void> addSale({
-    required String memberId,
+    required int memberId, // int型に変更
     required DateTime date,
     required Map<String, int> bottleQuantities, // bottle_id: quantity
   }) async {
@@ -57,7 +57,7 @@ class SalesController extends ChangeNotifier {
       final salesRes = await supabase
           .from('sales')
           .insert({
-            'member_id': memberId,
+            'member_id': memberId, // int型で渡す
             'date': date.toIso8601String(),
           })
           .select()
